@@ -16,18 +16,21 @@ import time
 from transformers import pipeline,AutoTokenizer,LlamaForCausalLM
 
 import chromadb
+from sentence_transformers import SentenceTransformer
+
 
 
 
 chunk_size = 256
 chunk_overlap = 0
 question = "两栋平行的居住建筑的间距应该怎样布置？"
-db_path = "../database"
+db_path = "./UrbanPlanningDemo/database"
 folder_path = "..\\data"
 file_path = "../data2/test.txt"
 load_new = False
 os.environ['CUDA_VISIBLE_DEVICES']='0,1,2,3'
 model_dir = "./llama/llama-2-70b-chat-hf"
+embeddingmodel_path = "./model/m3e-base"
 
 prompt_urbanist = """
     # Role: 城市规划师
@@ -86,7 +89,7 @@ def load_db(db_path, embedding):
 #嵌入方式
 def embedding_function():
     # embedding model: m3e-base
-    model_name = "moka-ai/m3e-base"
+    model_name = embeddingmodel_path
     model_kwargs = {'device': 'cpu'}
     encode_kwargs = {'normalize_embeddings': True}
     embedding = HuggingFaceBgeEmbeddings(
@@ -109,9 +112,13 @@ def embedding(documents, embedding, db):
 
 if __name__ == '__main__':
 
-    """
+    t0 = time.perf_counter()
     embedding_func = embedding_function() 
     db = load_db(db_path, embedding_func)
+    t1 = time.perf_counter()
+    print(f"Loading database : took {t0 - t1} seconds to execute")
+
+    """
 
     if load_new:
 
@@ -119,7 +126,6 @@ if __name__ == '__main__':
         split_documents = split_data(documents)
         db = embedding(split_documents, embedding_func, db)    
     """
-
 
     generation_kwargs = {
     "min_length": -1,
@@ -131,7 +137,7 @@ if __name__ == '__main__':
 }
 
     print("start up")
-    t1 = time.perf_counter()
+    
     generator = pipeline(task="text-generation", model=model_dir,torch_dtype=torch.bfloat16, device_map="auto", max_new_tokens = 1024)
     t2 = time.perf_counter()
     print(f"Loading tokenizer and model : took {t2 - t1} seconds to execute")
@@ -150,19 +156,19 @@ if __name__ == '__main__':
         print(output)
 
     """
-    retriever = db.as_retriever()
-    print("---------------------")
-    print(retriever)
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    print("---------------------")
-    print(memory)
-    qa = ConversationalRetrievalChain.from_llm(llm, retriever, memory=memory)
-    print("---------------------")
-    print(qa)
-    print("---------------------")
-    print(dir(qa))
-    qa({"question": question})
-    print(qa)    
+        retriever = db.as_retriever()
+        print("---------------------")
+        print(retriever)
+        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+        print("---------------------")
+        print(memory)
+        qa = ConversationalRetrievalChain.from_llm(llm, retriever, memory=memory)
+        print("---------------------")
+        print(qa)
+        print("---------------------")
+        print(dir(qa))
+        qa({"question": question})
+        print(qa)    
     
     """
 
