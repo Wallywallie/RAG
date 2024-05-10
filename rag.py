@@ -3,7 +3,7 @@ from langchain.text_splitter import CharacterTextSplitter,RecursiveCharacterText
 
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.chains.llm import LLMChain
+
 
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
@@ -13,10 +13,11 @@ from langchain_core.prompts import PromptTemplate
 import torch
 import os
 import time
-from transformers import pipeline,AutoTokenizer,LlamaForCausalLM
+from transformers import pipeline
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+
+
 
 
 
@@ -110,74 +111,39 @@ def embedding(documents, embedding, db):
     return db
 
 
-if __name__ == '__main__':
 
-    t0 = time.perf_counter()
-    embedding_func = embedding_function() 
-    db = load_db(db_path, embedding_func)
-    t1 = time.perf_counter()
-    print(f"Loading database : took {t1 - t0} seconds to execute")
 
-    """
+t0 = time.perf_counter()
+embedding_func = embedding_function() 
+db = load_db(db_path, embedding_func)
+t1 = time.perf_counter()
+print(f"Loading database : took {t1 - t0} seconds to execute")
 
-    if load_new:
 
-        documents = load_txt(file_path)
-        split_documents = split_data(documents)
-        db = embedding(split_documents, embedding_func, db)    
-    """
+if load_new:
 
-    generation_kwargs = {
-    "min_length": -1,
-    "top_k": 0,
-    "top_p": 0.85,
-    "do_sample": True,
-    "min_new_tokens": 10,
-    "max_new_tokens": 50,
-}
+    documents = load_txt(file_path)
+    split_documents = split_data(documents)
+    db = embedding(split_documents, embedding_func, db)    
 
-    print("start up")
-    
-    generator = pipeline(task="text-generation", model=model_dir,torch_dtype=torch.bfloat16, device_map="auto", max_new_tokens = 1024)
-    t2 = time.perf_counter()
-    print(f"Loading tokenizer and model : took {t2 - t1} seconds to execute")
-    template = """Question: {question}
-    Answer:
-    """
-    prompt = PromptTemplate.from_template(template)
-    # LLM选型
-    pipeline = HuggingFacePipeline(pipeline = generator)
-    retriever = db.as_retriever()
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-    qa = ConversationalRetrievalChain.from_llm(pipeline, retriever,memory=memory)
 
-    while True:
-        print("\n=================PLEASE TYPE IN YOUR QUESTION==============\n")
-        user_content = input("\nQuestion: ")
-        user_content.strip()
+generator = pipeline(task="text-generation", model=model_dir,torch_dtype=torch.bfloat16, device_map="auto", max_new_tokens = 1024)
+t2 = time.perf_counter()
+print(f"Loading tokenizer and model : took {t2 - t1} seconds to execute")
+template = """Question: {question}
+Answer:
+"""
+prompt = PromptTemplate.from_template(template)
 
-        t3 = time.perf_counter()
-        qa({"question": user_content})
-        t4 = time.perf_counter()
-        print(f"Generating answers : took {t4 - t3} seconds to execute")
-        print(qa)
 
-    """
-        retriever = db.as_retriever()
-        print("---------------------")
-        print(retriever)
-        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-        print("---------------------")
-        print(memory)
-        qa = ConversationalRetrievalChain.from_llm(llm, retriever, memory=memory)
-        print("---------------------")
-        print(qa)
-        print("---------------------")
-        print(dir(qa))
-        qa({"question": question})
-        print(qa)    
-    
-    """
+# LLM选型
+pipeline = HuggingFacePipeline(pipeline = generator)
+retriever = db.as_retriever()
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+qa = ConversationalRetrievalChain.from_llm(pipeline, retriever,memory=memory)
+
+
+
 
 
