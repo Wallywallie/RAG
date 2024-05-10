@@ -116,7 +116,7 @@ if __name__ == '__main__':
     embedding_func = embedding_function() 
     db = load_db(db_path, embedding_func)
     t1 = time.perf_counter()
-    print(f"Loading database : took {t0 - t1} seconds to execute")
+    print(f"Loading database : took {t1 - t0} seconds to execute")
 
     """
 
@@ -142,18 +142,26 @@ if __name__ == '__main__':
     t2 = time.perf_counter()
     print(f"Loading tokenizer and model : took {t2 - t1} seconds to execute")
     template = """Question: {question}
-    Answer:让我们一步一步地思考。
+    Answer:
     """
     prompt = PromptTemplate.from_template(template)
     # LLM选型
     pipeline = HuggingFacePipeline(pipeline = generator)
-    llm_chain = LLMChain(prompt= prompt, llm=pipeline)
+    retriever = db.as_retriever()
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
+    qa = ConversationalRetrievalChain.from_llm(pipeline, retriever,memory=memory)
+
     while True:
         print("\n=================PLEASE TYPE IN YOUR QUESTION==============\n")
         user_content = input("\nQuestion: ")
         user_content.strip()
-        output = llm_chain.invoke({"question":user_content})
-        print(output)
+
+        t3 = time.perf_counter()
+        qa({"question": user_content})
+        t4 = time.perf_counter()
+        print(f"Generating answers : took {t4 - t3} seconds to execute")
+        print(qa)
 
     """
         retriever = db.as_retriever()
