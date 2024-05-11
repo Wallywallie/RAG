@@ -8,7 +8,7 @@ from langchain_community.vectorstores import Chroma
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
-from langchain_core.prompts import PromptTemplate
+
 
 import torch
 import os
@@ -21,7 +21,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain.chains.retrieval_qa.base import VectorDBQA
 from langchain_core.runnables import RunnableParallel,RunnablePassthrough
-from langchain_core.prompts import ChatPromptTemplate
+import prompt_template
 
 chunk_size = 256
 chunk_overlap = 0
@@ -35,27 +35,7 @@ model_dir = "./llama/llama-2-70b-chat-hf"
 embeddingmodel_path = "./model/m3e-base"
 
 
-template = """
-    # Role: 城市规划师
-    ## Profile
-    - Author: author
-    - Version: 0.1
-    - Language: 中文
-    - Description: 你是一个有多年工作经验的城市规划师。你非常熟知上海市的城市规划管理规定。
-    ##Context:{context}
 
-    ## Rules
-    1. 不要在任何情况下破坏角色。
-    2. 不要说废话或编造事实
-    3. 不要介绍自己
-
-    ## Query:{input}
-
-    ## Initialization
-    作为角色 <Role>, 严格遵守 <Rules>,根据<Context>,使用默认 <Language> 与用户对话，回答用户的<Query>。    
-"""
-
-prompt = PromptTemplate.from_template(template)
 
 
 #本地数据加载
@@ -129,11 +109,15 @@ pipeline = HuggingFacePipeline(pipeline = generator)
 retriever = db.as_retriever()
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
+prompt = prompt_template.prompt
 
 output_parser = StrOutputParser()
 setup_and_retriever = RunnableParallel({"context" : retriever, "input": RunnablePassthrough()})
+
+
 chain = setup_and_retriever | prompt | pipeline | output_parser
 
-
-
+if __name__ == "main":
+    response = chain.invoke(question)
+    print(response)
 
