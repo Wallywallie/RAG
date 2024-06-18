@@ -22,19 +22,21 @@ from langchain.chains import create_retrieval_chain
 from langchain.chains.retrieval_qa.base import VectorDBQA
 from langchain_core.runnables import RunnableParallel,RunnablePassthrough
 import prompt_template
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableParallel,RunnablePassthrough
+import query
 
 chunk_size = 256
 chunk_overlap = 0
-question = "两栋平行的居住建筑的间距应该怎样布置？"
+question = "两栋平行的居住建筑的间距应该怎样控制？"
 db_path = "./UrbanPlanningDemo/database"
 folder_path = "..\\data"
 file_path = "../data2/test.txt"
 load_new = False
 os.environ['CUDA_VISIBLE_DEVICES']='0,1,2,3'
 model_dir = "./llama/llama-2-70b-chat-hf"
+#model_dir = "./llama/llama-2-7b-hf"
 embeddingmodel_path = "./model/m3e-base"
-
-
 
 
 
@@ -118,6 +120,9 @@ setup_and_retriever = RunnableParallel({"context" : retriever, "input": Runnable
 chain = setup_and_retriever | prompt | pipeline | output_parser
 
 if __name__ == "main":
-    response = chain.invoke(question)
+    t1 = time.perf_counter()
+    response = chain.invoke(query.l3)
+    t2 = time.perf_counter()
     print(response)
+    print(f"it takes {t2-t1} to generate")
 
